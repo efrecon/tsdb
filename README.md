@@ -1,9 +1,9 @@
 # tsdb
 
 TSDB is a simple approach to implementing a time-series database.  It
-is partly inspired by InfluxDB [1], but writes its content in plain
-text files.  TSDB provides support for the Graphite (Carbon) API [2]
-and the InfluxDB API [3] to write data into the database.
+is partly inspired by [InfluxDB][1], but writes its content in plain
+text files.  TSDB provides support for the [Graphite API][2] and the
+[InfluxDB API][3] to write data into the database.
 
 This is a work in progress.  For example, there are currently no
 client API implementation for retrieving data (even though there is an
@@ -36,7 +36,7 @@ dirty blocks will be reordered on disk.
 # Dependencies
 
 In order to support the InfluxDB API, the example client uses the mini
-HTTP server from til [4].  It assumes that a copy of the til is
+HTTP server from [til][4].  It assumes that a copy of the til is
 available in the lib directory (see the Dockerfile for an example).
 
     [4]: http://code.google.com/p/efr-tools/source/browse/#svn%2Ftrunk%2Ftil
