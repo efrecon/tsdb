@@ -22,5 +22,7 @@ EXPOSE 8086
 VOLUME /data
 
 # Execute tsdb on start, listening for both client APIs connections on
-# default database called db.
-ENTRYPOINT ["tclsh8.6", "/opt/tsdb/tsdb.tcl", "-v", "3", "-root", "/data", "-ports", "graphite:db:2003 influx:db:8086"]
+# default database called data (meaning that it will create a
+# subdirectory itself called data in the rootdirectory /data,
+# i.e. /data/data).
+ENTRYPOINT ["tclsh8.6", "/opt/tsdb/tsdb.tcl", "-v", "3", "-root", "/data", "-dbs", "data", "-ports", "graphite:data:2003 influx:data:8086"]
