@@ -13,7 +13,7 @@ namespace eval ::tdb {
 	    dateLogHeader  "\[%Y%m%d %H%M%S\] \[%module%\] \[%level%\] "
 	    verboseTags    {1 CRITICAL 2 ERROR 3 WARN 4 NOTICE 5 INFO 6 DEBUG}
 	    -name          "db"
-	    -chunk         262144
+	    -chunk         131072
 	    -root          .
 	    -ext           ".db"
 	}

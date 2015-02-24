@@ -17,6 +17,7 @@ set prg_args {
     -dbs     {db}                "List of databases to create"
     -ports   {graphite:db:2003}  "Port mapping, support graphite and influx API for input"
     -v       0                   "Verbosity level \[0-6\]"
+    -chunk   65536               "Target size of timeblocks on disk"
     -h       ""                  "Print this help and exit"
 }
 
@@ -95,7 +96,8 @@ if { [llength $argv] > 0 } {
 foreach dbname $TSDB(-dbs) {
     set db [::tdb::create \
 		-name $dbname \
-		-root [string map [list %progdir% $rootdir] $TSDB(-root)]]
+		-root [string map [list %progdir% $rootdir] $TSDB(-root)] \
+		-chunk $TSDB(-chunk)]
     foreach ports $TSDB(-ports) {
 	foreach {type tdb port} [split $ports ":"] break
 	if { $tdb eq $dbname } {
