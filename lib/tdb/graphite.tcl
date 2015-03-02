@@ -1,3 +1,20 @@
+##################
+## Module Name     --  tdb::graphite
+## Original Author --  Emmanuel Frecon - emmanuel@sics.se
+## Description:
+##
+##    Implement the graphite carbon protocol defined at
+##    http://graphite.readthedocs.org/en/latest/feeding-carbon.html.
+##    In Graphite, samples are organised in a hierarchy, where
+##    components of the hierarchy are separated by dots.  This module
+##    will extract the top component and make this to the name of the
+##    data series.  All remaning components will form the name of the
+##    samples.
+##
+## Commands Exported:
+##      cmd1
+##      cmd2
+##################
 namespace eval ::tdb::graphite {
     variable version 0.1
 }

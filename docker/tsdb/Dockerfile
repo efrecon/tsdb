@@ -9,9 +9,10 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y subversion
 
-COPY tsdb.tcl /opt/tsdb/
-COPY lib/tdb/*.tcl /opt/tsdb/lib/tdb/
+#COPY tsdb.tcl /opt/tsdb/
+#COPY lib/tdb/*.tcl /opt/tsdb/lib/tdb/
 
+RUN svn checkout https://github.com/efrecon/tsdb/trunk /opt/tsdb
 RUN svn checkout http://efr-tools.googlecode.com/svn/trunk/til /opt/tsdb/lib/til
 
 # Export Graphite and Influx ports

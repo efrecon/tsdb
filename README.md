@@ -23,7 +23,7 @@ itself having as many directories as the series has ever had samples.
 In each sample directory, there will be a number of timeblocks, where
 the name can be directly mapped to the timestamp of the first sample
 in that block.  TSDB tries to limit the size of these blocks to ease
-copying.
+copying, management and introspection.
 
 As time goes by and values for samples are written, these values will
 be appended to a timeblocks and new timeblocks will be created

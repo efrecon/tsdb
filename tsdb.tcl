@@ -1,3 +1,28 @@
+##################
+## App Name        --  tsdb.tcl
+## Original Author --  Emmanuel Frecon - emmanuel@sics.se
+## Description:
+##
+##    This implements a timeseries database using plain text files.  A
+##    database is contained in a main directory.  This directory can
+##    contain a number of "series" (think data series), each series
+##    will lead to the creation of a sub-directory.  Series can
+##    contain any sample, where a sample is a key and a value (can be
+##    of any type) at a given time.  Storage-wise, sample names will
+##    generate yet another sub-directory and this directory will
+##    contain one or several files, containing the timestamps and
+##    values.  The name of these files is used to pinpoint the
+##    timestamp of the earliest value that it contains and the library
+##    arranges for keeping the size of those files under some control.
+##
+##    As time increases linearily, this implementation tries to append
+##    to the files storing values for samples.  Whenever inserts occur
+##    "back in time", these inserts will first be appended to the
+##    file, but the file will be marked as "dirty", to be reorganised
+##    in increasing sorting order at a later time.
+##
+##################
+
 array set TSDB {
     peers     {}
     levels    {1 CRITICAL 2 ERROR 3 WARN 4 NOTICE 5 INFO 6 DEBUG}

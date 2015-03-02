@@ -1,3 +1,15 @@
+##################
+## Module Name     --  tdb::influx
+## Original Author --  Emmanuel Frecon - emmanuel@sics.se
+## Description:
+##
+##    Implements the InfluxDB API for receiving data as documented at
+##    http://influxdb.com/docs/v0.8/api/reading_and_writing_data.html.
+##
+## Commands Exported:
+##      cmd1
+##      cmd2
+##################
 package require minihttpd
 package require tdb::json
 
