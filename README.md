@@ -39,7 +39,7 @@ In order to support the InfluxDB API, the example client uses the mini
 HTTP server from [til][4].  It assumes that a copy of the til is
 available in the lib directory (see the Dockerfile for an example).
 
-    [4]: http://code.google.com/p/efr-tools/source/browse/#svn%2Ftrunk%2Ftil
+    [4]: https://code.google.com/p/efr-tools/source/browse/trunk/til/README
 
 # Internal API
 
@@ -89,19 +89,28 @@ The example client is able to receive HTTP post on the standard
 InfluxDB port.  There is no support for authentication at this point
 (even though this is supported by the internal HTTP server).
 
-# Docker Component
+# Docker Components
+
+## Server
 
 The example server can be packaged as a docker component. To create it
-run the following:
+run the following from the `docker/tsdb` sub-directory
 
     docker build -t efrecon/tsdb .
 
 To run it with maximal verbosity (not recommended), execute the
 following command.  This will create a server that listen for incoming
-client connections on the graphite default port (`2003') and on the
+client connections on the graphite default port (`2003`) and on the
 InfluxDB default port (`8086`).  Both ports are exposed, as
 examplified below.  The components is configured to use a database
 called `db`, located in the exported volume `/data`.
 
     docker run -d --name="tsdb" -p 2003:2003 -p 8086:8086 efrecon/tsdb -v 6
+
+## InfluxDB Exporter
+
+There is also an InfluxDB converter, which will ask for all samples in
+all series in a TSDB database and post these for storage in an
+InfluxDB database.  This can be built using similar commands from the
+`Dockerfile` contained in the `docker/tsdb2influx` sub-directory.
 
