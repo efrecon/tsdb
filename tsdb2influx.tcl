@@ -70,7 +70,6 @@ proc ::log { lvl module msg} {
     }
 }
 
-
 array set T2I {}
 foreach {arg val dsc} $prg_args {
     set T2I($arg) $val
@@ -90,6 +89,20 @@ for {set eaten ""} {$eaten ne $argv} {} {
 if { [llength $argv] > 0 } {
     ::help:dump "$argv contains unknown options"
 }
+
+proc ::ascii { vname {rpl ""}} {
+    set vname [string map {Å A Ä A Ö O å a ä a ö o} $vname]
+    set cln ""
+    foreach c [split $vname ""] {
+	if { [string match -nocase {[a-z0-9_]} $c] } {
+	    append cln $c
+	} else {
+	    append cln $rpl
+	}
+    }
+    return $cln
+}
+
 
 proc ::dater { tstamp } {
     global T2I
@@ -114,8 +127,8 @@ proc ::dump {db serie sample start end} {
     set json ""
     append json "\["
     append json "\{"
-    append json "\"name\": \"$serie\","
-    append json "\"columns\": \[\"time\",\"$sample\"\],"
+    append json "\"name\": \"[ascii $serie]\","
+    append json "\"columns\": \[\"time\",\"[ascii $sample]\"\],"
     append json "\"points\":\["
     foreach {tstamp val} [$db samples $serie $sample $end $start] {
 	append json "\[$tstamp,"
