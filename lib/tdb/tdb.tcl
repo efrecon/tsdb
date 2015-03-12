@@ -34,6 +34,8 @@ namespace eval ::tdb {
 	    logger         ""
 	    dateLogHeader  "\[%Y%m%d %H%M%S\] \[%module%\] \[%level%\] "
 	    verboseTags    {1 CRITICAL 2 ERROR 3 WARN 4 NOTICE 5 INFO 6 DEBUG}
+	    verbose        3
+	    logd           stderr
 	    -name          "db"
 	    -chunk         131072
 	    -root          .
@@ -474,6 +476,22 @@ proc ::tdb::Identifier { {pfx "" } } {
 }
 
 
+# ::tdb::SeriesDir -- Directory for data series
+#
+#       Access (and possibly create) the directory where to store data
+#       series.
+#
+# Arguments:
+#	db	Identifier of database (as of create).
+#	series	Name of series
+#	create	Should we create the directory if it does not exist
+#
+# Results:
+#       Return the full path to the directory, or an empty string if
+#       it does not exist (or could not be created).
+#
+# Side Effects:
+#       Create directory on disk.
 proc ::tdb::SeriesDir { db series { create 1 } } {
     upvar \#0 $db DB
 
@@ -481,35 +499,94 @@ proc ::tdb::SeriesDir { db series { create 1 } } {
     if {![file isdirectory $dir] && $create } {
 	file mkdir $dir
     }
-    return $dir
+    if { [file isdirectory $dir] } {
+	return $dir
+    }
+    return ""
 }
 
 
+# ::tdb::SamplesDir -- Directory for samples in data series
+#
+#       Access (and possibly create) the directory where to store
+#       samples for a data series.
+#
+# Arguments:
+#	db	Identifier of database (as of create).
+#	series	Name of series
+#	samples	Name of samples (think "a key")
+#	create	Should we create the directory if it does not exist
+#
+# Results:
+#       Return the full path to the directory, or an empty string if
+#       it does not exist (or could not be created).
+#
+# Side Effects:
+#       Create directory on disk.
 proc ::tdb::SamplesDir { db series samples { create 1 } } {
     set dir [file join [SeriesDir $db $series $create] $samples]
     if {![file isdirectory $dir] && $create } {
 	file mkdir $dir
     }
-    return $dir
+    if { [file isdirectory $dir] } {
+	return $dir
+    }
+    return ""
 }
 
 
+# ::tdb::StoreSample -- Store a value for a sample
+#
+#       Store the value for a sample in a data series.
+#
+# Arguments:
+#	db	Identifier of database (as of create)
+#	series	Name of data series
+#	sample	Name of sample to store value for
+#	value	Value of sample to store
+#	time	Time in milliseconds (empty for current time).
+#
+# Results:
+#       None.
+#
+# Side Effects:
+#       Will create file or append to file if necessary.
 proc ::tdb::StoreSample { db series sample value {time ""} } {
     upvar \#0 $db DB
     
+    # Make sure we know about all timeblocks for that sample
     timeblock::recap $db $series $sample
     if { $time eq "" } {
 	set time [clock milliseconds]
     }
 
+    # Try to find a timeblock for that time, if not, create one.
     set tb [timeblock::block $db $series $sample $time]
     if { $tb eq "" } {
 	set tb [timeblock::new $db $series $sample $time]
     }
+    
+    # Insert into selected timeblock.
     timeblock::insert $tb $time $value
 }
 
 
+# ::tdb::Existing -- Existing timestamps
+#
+#       Return sorted list of existing timeblocks files for a sample
+#       in a data series.  The list is sorted in increasing order,
+#       i.e. latest first so as to ease discovery for insertion.
+#
+# Arguments:
+#	db	Identifier of database (as of create)
+#	series	Name of data series
+#	sample	Name of sample to look for existing blocks for
+#
+# Results:
+#       Return sorted list of block entries.
+#
+# Side Effects:
+#       None.
 proc ::tdb::Existing { db series sample } {
     upvar \#0 $db DB
 
@@ -526,6 +603,20 @@ proc ::tdb::Existing { db series sample } {
 }
 
 
+# ::tdb::Init -- Initialise database
+#
+#       Initialise datase storage by creating its main directory if
+#       necessary.  This will also create the root directory if
+#       necessary.
+#
+# Arguments:
+#	db	Identifier of database (as of create).
+#
+# Results:
+#       Return directory for storage, empty string on failures.
+#
+# Side Effects:
+#       None.
 proc ::tdb::Init { db } {
     variable TDB
 
@@ -534,6 +625,10 @@ proc ::tdb::Init { db } {
     if { ![file isdirectory $dir] } {
 	file mkdir $dir
     }
+    if { [file isdirectory $dir] } {
+	return $dir
+    }
+    return ""
 }
 
 

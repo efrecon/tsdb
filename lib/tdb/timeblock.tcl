@@ -1,3 +1,22 @@
+##################
+## Module Name     --  tdb::timeblock
+## Original Author --  Emmanuel Frecon - emmanuel@sics.se
+## Description:
+##
+##     This contains the core of the timeseries database
+##     implementation.  There will be one timeblock object for each
+##     chunk of data samples on disk.  Under some conditions, the
+##     block objects also contain a cache of the values that also are
+##     on disk, but this is seldom the case to avoid using too much
+##     memory.
+##
+## Commands Exported:
+##      None, really. All is internal.  But the lower case/upper case
+##      convention still applies so as to be able to have procedures
+##      that really are local to the implementation, and others which
+##      are its interface to the main tdb.tcl module.
+##################
+
 namespace eval ::tdb::timeblock {
     variable TMBLOCK
     if { ![::info exists TMBLOCK] } {
@@ -14,19 +33,44 @@ namespace eval ::tdb::timeblock {
     variable version 0.1
 }
 
+
+# ::tdb::timeblock::recap -- (re)creates blocks from disk state
+#
+#       This procedure will (re)create as many timeblocks as there are
+#       on disk for a given sample.  It is aware of the timeblocks
+#       that aleady are in memory, i.e. that the module already know
+#       of and will only creates the ones that are on disk, but not in
+#       memory.
+#
+# Arguments:
+#	db	Identifier of database
+#	series	Name of (data) series
+#	sample	Name of sample to recap for.
+#
+# Results:
+#       Return the whole list of timeblocks objects for that sample.
+#
+# Side Effects:
+#       Might rearrange file content.
 proc ::tdb::timeblock::recap { db series sample } {
     variable TMBLOCK
     upvar \#0 $db DB
 
-    set blocks {};   # Block initiated from disk
+    set blocks {};
     set sdir [[namespace parent]::SamplesDir $db $series $sample 1]
     set existing [blocks $db $series $sample]
 
+    # Go through all existing files on disk for that series and samples
     set first 1
     foreach tgt [[namespace parent]::Existing $db $series $sample] {
+	# Timeblocks can be flagged and the flags are appended to the
+	# timestamp using dashes.  The timestamp is always first.
 	set bd [split [file rootname $tgt] "-"]
 	set timestamp [lindex $bd 0]
 
+	# Set the variable found to be true if we already know about
+	# that timeblock, i.e. if we already have a timeblock object
+	# starting at that time.
 	set found 0
 	foreach tb $existing {
 	    upvar \#0 $tb TMB
@@ -36,6 +80,8 @@ proc ::tdb::timeblock::recap { db series sample } {
 	    }
 	}
 
+	# If we couldn't find the block in memory, create a timeblock
+	# object and initialise it.
 	if { !$found } {
 	    set tb [New $db $series $sample]
 	    upvar \#0 $tb TMB
@@ -45,7 +91,7 @@ proc ::tdb::timeblock::recap { db series sample } {
 	    set TMB(-flags) [lrange $bd 1 end]
 	    Init $tb $first;   # Initialise from actual data on disk.
 	}
-	lappend blocks $tb
+	lappend blocks $tb;  # Make sure blocks contain the whole list.
 	set first 0
     }
 

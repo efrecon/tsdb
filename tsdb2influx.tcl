@@ -16,6 +16,8 @@ set prg_args {
     -db      {db}                "TSDB database to export"
     -influx  {http://localhost:8086/db/data/series} "Influx destination"
     -v       0                   "Verbosity level \[0-6\]"
+    -slots   720                 "Slots divider when fetching data, in mins. Negative to turn off"
+    -dryrun  0                   "Turn on to dump InfluxDB JSON calls on stdout instead"
     -h       ""                  "Print this help and exit"
 }
 
@@ -88,6 +90,53 @@ if { [llength $argv] > 0 } {
     ::help:dump "$argv contains unknown options"
 }
 
+proc ::dump {db serie sample start end} {
+    global T2I
+
+    ::tdb::log INFO "Pushing $sample in series $serie ($start->$end)"
+    # Note that this creates a (possibly) gigantic JSON array with all
+    # points for the sample, so this might be impractical from a
+    # scaling point of view.
+    set count 0
+    set json ""
+    append json "\["
+    append json "\{"
+    append json "\"name\": \"$serie\","
+    append json "\"columns\": \[\"time\",\"$sample\"\],"
+    append json "\"points\":\["
+    foreach {tstamp val} [$db samples $serie $sample $end $start] {
+	append json "\[$tstamp,"
+	if { [string is integer -strict $val] \
+		 || [string is boolean -strict $val] \
+		 || [string is double -strict $val] } {
+	    append json $val
+	} else {
+	    append json "\"$val\""
+	}
+	append json "\],"
+	incr count
+    }
+    set json [string trimright $json ","];  # Not really a good idea...
+    append json "\]"
+    append json "\}"
+    append json "\]"
+
+    if { $T2I(-dryrun) } {
+	puts stdout $json
+    } else {
+	set tok [::http::geturl $T2I(-influx) \
+		     -type "application/json" \
+		     -query $json]
+	set code [::http::ncode $tok]
+	if { $code >= 200 && $code < 300 } {
+	    ::tdb::log INFO "Pushed $count value(s) for $sample"
+	} else {
+	    ::tdb::log WARN "Failed pushing data: $code, [http::error $tok]"
+	}
+	::http::cleanup $tok
+    }
+}
+
 # Hook in log facility in tdb module
 ::tdb::verbosity $T2I(-v)
 ::tdb::logger ::log
@@ -100,43 +149,17 @@ foreach serie [$db series] {
     set nfo [$db info $serie]
     foreach sample [dict get $nfo samples] {
 	if { [dict get [$db info $serie $sample] count] > 0 } {
-	    ::tdb::log INFO "Pushing $sample in series $serie"
-	    set count 0
-	    set json ""
-	    append json "\["
-	    append json "\{"
-	    append json "\"name\": \"$serie\","
-	    append json "\"columns\": \[\"time\",\"$sample\"\],"
-	    append json "\"points\":\["
-	    foreach {tstamp val} [$db samples $serie $sample \
-				      [dict get $nfo latest] \
-				      [dict get $nfo earliest]] {
-		append json "\[$tstamp,"
-		if { [string is integer -strict $val] \
-			 || [string is boolean -strict $val] \
-			 || [string is double -strict $val] } {
-		    append json $val
-		} else {
-		    append json "\"$val\""
-		}
-		append json "\],"
-		incr count
-	    }
-	    set json [string trimright $json ","]
-	    append json "\]"
-	    append json "\}"
-	    append json "\]"
-	    
-	    set tok [::http::geturl $T2I(-influx) \
-			 -type "application/json" \
-			 -query $json]
-	    set code [::http::ncode $tok]
-	    if { $code >= 200 && $code < 300 } {
-		::tdb::log DEBUG "Pushed $count value(s) for $sample"
+	    if { $T2I(-slots) <= 0 } {
+		dump $db $serie $sample \
+		    [dict get $nfo earliest] [dict get $nfo latest]
 	    } else {
-		::tdb::log WARN "Failed pushing data: $code, [http::error $tok]"
+		for {set tstart [dict get $nfo earliest]} \
+		    {$tstart<[dict get $nfo latest]} \
+		    {incr tstart $T2I(-slots)} {
+			dump $db $serie $sample \
+			    $tstart [expr {$tstart + $T2I(-slots)*60*1000}]
+		}
 	    }
-	    ::http::cleanup $tok
 	}
     }
 }
