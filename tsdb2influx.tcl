@@ -134,19 +134,21 @@ proc ::dump {db serie sample start end} {
     append json "\}"
     append json "\]"
 
-    if { $T2I(-dryrun) } {
-	puts stdout $json
-    } else {
-	set tok [::http::geturl $T2I(-influx) \
-		     -type "application/json" \
-		     -query $json]
-	set code [::http::ncode $tok]
-	if { $code >= 200 && $code < 300 } {
-	    ::tdb::log INFO "Pushed $count value(s) for $sample"
+    if { $count > 0 } {
+	if { $T2I(-dryrun) } {
+	    puts stdout $json
 	} else {
-	    ::tdb::log WARN "Failed pushing data: $code, [http::error $tok]"
+	    set tok [::http::geturl $T2I(-influx) \
+			 -type "application/json" \
+			 -query $json]
+	    set code [::http::ncode $tok]
+	    if { $code >= 200 && $code < 300 } {
+		::tdb::log INFO "Pushed $count value(s) for $sample"
+	    } else {
+		::tdb::log WARN "Failed pushing data: $code, [http::error $tok]"
+	    }
+	    ::http::cleanup $tok
 	}
-	::http::cleanup $tok
     }
 }
 
