@@ -39,7 +39,7 @@ In order to support the InfluxDB API, the example client uses the mini
 HTTP server from [til][4].  It assumes that a copy of the til is
 available in the lib directory (see the Dockerfile for an example).
 
-    [4]: https://code.google.com/p/efr-tools/source/browse/trunk/til/README
+  [4]: https://code.google.com/p/efr-tools/source/browse/trunk/til/README
 
 # Internal API
 
@@ -112,5 +112,7 @@ called `db`, located in the exported volume `/data`.
 There is also an InfluxDB converter, which will ask for all samples in
 all series in a TSDB database and post these for storage in an
 InfluxDB database.  This can be built using similar commands from the
-`Dockerfile` contained in the `docker/tsdb2influx` sub-directory.
+`Dockerfile` contained in the `docker/tsdb2influx` sub-directory.  The
+exporter is able to separate the TSDB series in smaller chunks based
+on time, so as to minimise the size of the queries sent to InfluxDB.
 
