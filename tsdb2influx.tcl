@@ -2,6 +2,7 @@ array set T2I {
     peers     {}
     levels    {1 CRITICAL 2 ERROR 3 WARN 4 NOTICE 5 INFO 6 DEBUG}
     verbose   0
+    dtFormat  "%Y/%m/%d %H:%M:%S"
 }
 
 set rootdir [file normalize [file dirname [info script]]]
@@ -90,10 +91,22 @@ if { [llength $argv] > 0 } {
     ::help:dump "$argv contains unknown options"
 }
 
+proc ::dater { tstamp } {
+    global T2I
+
+    set dt [expr {$tstamp/1000}]
+    set ms [expr {$tstamp-(1000*$dt)}]
+    set str [clock format $dt -format $T2I(dtFormat)]
+    append str ".[format %.03d $ms]"
+    return $str
+}
+
+
 proc ::dump {db serie sample start end} {
     global T2I
 
-    ::tdb::log INFO "Pushing $sample in series $serie ($start->$end)"
+    ::tdb::log NOTICE "Pushing $sample in series $serie\
+                       ([dater $start]->[dater $end])"
     # Note that this creates a (possibly) gigantic JSON array with all
     # points for the sample, so this might be impractical from a
     # scaling point of view.
@@ -145,6 +158,7 @@ proc ::dump {db serie sample start end} {
 set db [::tdb::create \
 	    -name $T2I(-db) \
 	    -root [string map [list %progdir% $rootdir] $T2I(-root)]]
+set stepper [expr {$T2I(-slots)*60*1000}]
 foreach serie [$db series] {
     set nfo [$db info $serie]
     foreach sample [dict get $nfo samples] {
@@ -154,10 +168,10 @@ foreach serie [$db series] {
 		    [dict get $nfo earliest] [dict get $nfo latest]
 	    } else {
 		for {set tstart [dict get $nfo earliest]} \
-		    {$tstart<[dict get $nfo latest]} \
-		    {incr tstart $T2I(-slots)} {
+		    {$tstart<=[dict get $nfo latest]} \
+		    {incr tstart $stepper} {
 			dump $db $serie $sample \
-			    $tstart [expr {$tstart + $T2I(-slots)*60*1000}]
+			    $tstart [expr {$tstart + $stepper - 1}]
 		}
 	    }
 	}
