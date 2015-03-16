@@ -29,7 +29,9 @@ proc ::tdb::influx::server { db {port 8086} } {
     }
     
     ::minihttpd::handler $srv /db/$DB(-name)/series \
-	[list ::tdb::influx::Write $db] "application/json"
+	[list ::tdb::influx::Write $db] "text/plain"
+    ::minihttpd::handler $srv /ping \
+	[list ::tdb::influx::Ping $db] "text/plain"
 }
 
 proc ::tdb::influx::Write { db prt sock url qry } {
@@ -59,7 +61,12 @@ proc ::tdb::influx::Write { db prt sock url qry } {
 	    }
 	}
     }
+
+    return "ok"
 }
 
+proc ::tdb::influx::Ping { db prt sock url qry } {
+    return "ok"
+}
 
 package provide tdb::influx $::tdb::influx::version
