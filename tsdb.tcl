@@ -26,7 +26,6 @@
 array set TSDB {
     peers     {}
     levels    {1 CRITICAL 2 ERROR 3 WARN 4 NOTICE 5 INFO 6 DEBUG}
-    verbose   0
 }
 
 set rootdir [file normalize [file dirname [info script]]]
@@ -113,9 +112,21 @@ if { [llength $argv] > 0 } {
     ::help:dump "$argv contains unknown options"
 }
 
-# Hook in log facility in tdb module
+# Hook in log facility in tdb module and corelate to dependent modules.
+if { ![string is integer $TSDB(-v)] } {
+    foreach {i s} $TSDB(levels) {
+	if { [string match -nocase $TSDB(-v) $s] } {
+	    set TSDB(-v) $i
+	    break
+	}
+    }
+}
 ::tdb::verbosity $TSDB(-v)
 ::tdb::logger ::log
+array set LVL $TSDB(levels)
+if { [info exists LVL($TSDB(-v))] } {
+    ::minihttpd::loglevel [string tolower $LVL($TSDB(-v))]
+}
 
 
 foreach dbname $TSDB(-dbs) {
