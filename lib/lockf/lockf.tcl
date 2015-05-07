@@ -1,6 +1,6 @@
 namespace eval ::lockf {
     variable version 0.2;    # Current package version
-    variable log     stderr; # Should we output some logging info, and where?
+    variable log     "";     # Should we output some logging info, and where?
 
     # Encapsulates variables global to this namespace under their own
     # namespace, an idea originating from http://wiki.tcl.tk/1489.
