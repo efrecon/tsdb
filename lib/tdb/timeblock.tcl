@@ -17,6 +17,9 @@
 ##      are its interface to the main tdb.tcl module.
 ##################
 
+package require lockf
+
+
 namespace eval ::tdb::timeblock {
     variable TMBLOCK
     if { ![::info exists TMBLOCK] } {
@@ -303,14 +306,38 @@ proc ::tdb::timeblock::Cache { tb } {
 }
 
 
+proc ::tdb::timeblock::Impede { tb fname elapsed } {
+    if { [info exists $tb] } {
+	upvar \#0 $tb TMB
+	set TMB(__immediate) 0
+    }
+    return [lockf impede $fname $elapsed]
+}
+
+
 proc ::tdb::timeblock::Append { tb time val } {
     upvar \#0 $tb TMB
 
+    set TMB(__immediate) 1
+    if { ![lockf locked [lockf lockfile $TMB(-file)]] } {
+	set ms [lockf lock [lockf lockfile $TMB(-file)] \
+		    -impeder [list [namespace current]::Impede $tb]]
+	if { $ms <= 0 } {
+	    return -code error "Could not acquire lock on $TMB(-file)"
+	}
+    }
     if { $TMB(fd) eq "" } {
+	set TMB(fd) [open $TMB(-file) a+]
+    } elseif { ! $TMB(__immediate) } {
+	# Reopen if we had to wait for the lock, meaning some other
+	# process tried to write to the same file...  We would really
+	# need to perhaps resync here??
+	close $TMP(fd)
 	set TMB(fd) [open $TMB(-file) a+]
     }
     puts $TMB(fd) [list $time $val]
     flush $TMB(fd)
+    lockf unlock [lockf lockfile $TMB(-file)]
 
     if { $time > $TMB(-end) } {
 	set TMB(-end) $time
@@ -380,6 +407,15 @@ proc ::tdb::timeblock::Reorder { tb { close 0 } } {
 	array set SAMPLES [Raw $tb]
     }
 
+    # Start by locking so we ensure nobody writes during the
+    # reordering...
+    if { ! [lockf locked [lockf lockfile $TMB(-file)]] } {
+	set ms [lockf lock [lockf lockfile $TMB(-file)]]
+	if { $ms <= 0 } {
+	    return -code error "Could not acquire lock for $TMB(-file)"
+	}
+    }
+
     # Force close, we'll create and open a new file.  This is
     # necessary since we might have SEVERAL entries for the same
     # timestamp at this point, meaning that if we only reorder in the
@@ -406,6 +442,7 @@ proc ::tdb::timeblock::Reorder { tb { close 0 } } {
     # Now make the new file OUR file and keep the file descriptor open
     # if relevant.
     file rename -force -- $fname $TMB(-file)
+    lockf unlock [lockf lockfile $TMB(-file)]
 
     if { $close } {
 	close $TMB(fd)
