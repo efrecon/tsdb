@@ -23,5 +23,5 @@ VOLUME /data
 # default database called data (meaning that it will create a
 # subdirectory itself called data in the rootdirectory /data,
 # i.e. /data/data).
-ENTRYPOINT ["tclsh8.6", "/opt/tsdb/tsdb.tcl"]
-CMD ["-v", "3", "-root", "/data", "-dbs", "data", "-ports", "graphite:data:2003 influx:data:8086"]
+ENTRYPOINT ["tclsh8.6", "/opt/tsdb/tsdb.tcl", "-root", "/data"]
+CMD ["-v", "3", "-dbs", "data", "-ports", "graphite:data:2003 influx:data:8086"]
