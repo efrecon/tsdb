@@ -1,19 +1,16 @@
-FROM efrecon/tcl
+FROM efrecon/mini-tcl
 MAINTAINER Emmanuel Frecon <emmanuel@sics.se>
 
-# Set the env variable DEBIAN_FRONTEND to noninteractive to get
-# apt-get working without error output.
-ENV DEBIAN_FRONTEND noninteractive
+# Install git so we can install dependencies
+RUN apk add --update-cache git
 
-# Update underlying ubuntu image and all necessary packages.
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y subversion
-
-#COPY tsdb.tcl /opt/tsdb/
-#COPY lib/tdb/*.tcl /opt/tsdb/lib/tdb/
-
-RUN svn checkout https://github.com/efrecon/tsdb/trunk /opt/tsdb
-RUN svn checkout http://efr-tools.googlecode.com/svn/trunk/til /opt/tsdb/lib/til
+# Install til and tsdb into /tmp and move them to proper locations
+WORKDIR /opt
+RUN git clone https://github.com/efrecon/tsdb
+WORKDIR /opt/tsdb/lib
+RUN git clone https://github.com/efrecon/til
+RUN rm -rf /var/cache/apk/*
+WORKDIR /opt/tsdb
 
 # Export Graphite and Influx ports
 EXPOSE 2003
@@ -26,4 +23,5 @@ VOLUME /data
 # default database called data (meaning that it will create a
 # subdirectory itself called data in the rootdirectory /data,
 # i.e. /data/data).
-ENTRYPOINT ["tclsh8.6", "/opt/tsdb/tsdb.tcl", "-v", "3", "-root", "/data", "-dbs", "data", "-ports", "graphite:data:2003 influx:data:8086"]
+ENTRYPOINT ["tclsh8.6", "/opt/tsdb/tsdb.tcl"]
+CMD ["-v", "3", "-root", "/data", "-dbs", "data", "-ports", "graphite:data:2003 influx:data:8086"]
