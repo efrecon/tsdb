@@ -39,7 +39,7 @@ In order to support the InfluxDB API, the example client uses the mini
 HTTP server from [til][4].  It assumes that a copy of the til is
 available in the lib directory (see the Dockerfile for an example).
 
-  [4]: https://code.google.com/p/efr-tools/source/browse/trunk/til/README
+  [4]: https://github.com/efrecon/til
 
 # Internal API
 
@@ -85,9 +85,9 @@ sample.
 
 ## InfluxDB
 
-The example client is able to receive HTTP post on the standard
-InfluxDB port.  There is no support for authentication at this point
-(even though this is supported by the internal HTTP server).
+The example client is able to receive HTTP post on the standard InfluxDB port.
+There is no support for authentication at this point (even though this is
+supported by the internal HTTP server).  Only the 0.8 API is recognised.
 
 # Docker Components
 
@@ -115,4 +115,3 @@ InfluxDB database.  This can be built using similar commands from the
 `Dockerfile` contained in the `docker/tsdb2influx` sub-directory.  The
 exporter is able to separate the TSDB series in smaller chunks based
 on time, so as to minimise the size of the queries sent to InfluxDB.
-
