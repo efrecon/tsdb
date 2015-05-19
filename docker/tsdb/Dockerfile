@@ -4,7 +4,7 @@ MAINTAINER Emmanuel Frecon <emmanuel@sics.se>
 # Install git so we can install dependencies
 RUN apk add --update-cache git
 
-# Install til and tsdb into /tmp and move them to proper locations
+# Install tsdb into /opt and til in the lib subdirectory
 WORKDIR /opt
 RUN git clone https://github.com/efrecon/tsdb
 WORKDIR /opt/tsdb/lib
