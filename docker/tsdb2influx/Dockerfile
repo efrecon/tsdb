@@ -1,4 +1,4 @@
-FROM efrecon/tcl
+FROM efrecon/mini-tcl
 MAINTAINER Emmanuel Frecon <emmanuel@sics.se>
 
 # Install git so we can install dependencies
