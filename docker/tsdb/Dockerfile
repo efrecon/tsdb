@@ -2,15 +2,14 @@ FROM efrecon/mini-tcl
 MAINTAINER Emmanuel Frecon <emmanuel@sics.se>
 
 # Install git so we can install dependencies
-RUN apk add --update-cache git
-
 # Install tsdb into /opt and til in the lib subdirectory
-WORKDIR /opt
-RUN git clone https://github.com/efrecon/tsdb
-WORKDIR /opt/tsdb/lib
-RUN git clone https://github.com/efrecon/til
-RUN rm -rf /var/cache/apk/*
-WORKDIR /opt/tsdb
+RUN apk add --update-cache git && \
+    git clone https://github.com/efrecon/tsdb /opt/tsdb && \
+    rm -rf /opt/tsdb/.git && \
+    git clone https://github.com/efrecon/til /opt/tsdb/lib/til && \
+    rm -rf /opt/tsdb/lib/til/.git && \
+    apk del git && \
+    rm -rf /var/cache/apk/*
 
 # Export Graphite and Influx ports
 EXPOSE 2003

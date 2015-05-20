@@ -2,13 +2,12 @@ FROM efrecon/mini-tcl
 MAINTAINER Emmanuel Frecon <emmanuel@sics.se>
 
 # Install git so we can install dependencies
-RUN apk add --update-cache git
-
-# Install tsdb into /opt
-WORKDIR /opt
-RUN git clone https://github.com/efrecon/tsdb
-RUN rm -rf /var/cache/apk/*
-WORKDIR /opt/tsdb
+# Install tsdb into /opt and til in the lib subdirectory
+RUN apk add --update-cache git && \
+    git clone https://github.com/efrecon/tsdb /opt/tsdb && \
+    rm -rf /opt/tsdb/.git && \
+    apk del git && \
+    rm -rf /var/cache/apk/*
 
 # Export where databases will be placed by default
 VOLUME /data
