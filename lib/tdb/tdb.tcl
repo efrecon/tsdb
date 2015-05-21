@@ -40,6 +40,7 @@ namespace eval ::tdb {
 	    -chunk         131072
 	    -root          .
 	    -ext           ".db"
+	    -locking       ""
 	}
 	variable version 0.1
 	variable libdir [file dirname [file normalize [::info script]]]
@@ -626,10 +627,55 @@ proc ::tdb::Init { db } {
 	file mkdir $dir
     }
     if { [file isdirectory $dir] } {
+	# If locking mechanism wasn't specified, guess it using a
+	# temporary file and trying hard and symbolic linking on the
+	# current host.
+	if { $DB(-locking) eq "" } {
+	    set fd [TempFile $dir tmp_main]
+	    close $fd
+	    set tmp_lnk [TempPath $dir]
+	    if { [catch {file link -hard $tmp_lnk $tmp_main}] == 0 } {
+		set DB(-locking) hard
+	    } elseif { [catch {file link -symbolic $tmp_lnk $tmp_main}] == 0 } {
+		set DB(-locking) symbolic
+	    }
+	    catch {file delete -force -- $tmp_lnk}
+	    catch {file delete -force -- $tmp_main}
+	}
+
+	# Pass guessed locking technique to lockf module.
+	if { $DB(-locking) ne "" } {
+	    log INFO "Will use $DB(-locking) links for locking"
+	    ::lockf::defaults -linking $DB(-locking)
+	}
+
 	return $dir
     }
+
     return ""
 }
 
+
+proc ::tdb::TempFile { dir {fpath_ {}} {retries 10}} {
+    if {$fpath_ ne {}} {
+        upvar 1 $fpath_ filename
+    }
+    for {set i 0} {$i < $retries} {incr i} {
+	set filename [TempPath $dir]
+        if {![catch {open $filename {RDWR CREAT EXCL} 0600} channel]} {
+            return $channel
+        }
+    }
+    error "failed to find an unused temporary file name"    
+}
+
+proc ::tdb::TempPath { dir } {
+    set chars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+    set filename [file join $dir [string map {: ""} [namespace current]]]_
+    for {set j 0} {$j < 10} {incr j} {
+	append filename [string index $chars [expr {int(rand() * 62)}]]
+    }
+    return $filename
+}
 
 package provide tdb $::tdb::version

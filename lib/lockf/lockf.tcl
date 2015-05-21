@@ -51,12 +51,42 @@ namespace eval ::lockf {
 	# or 0 on fatal errors.  It can use the internal
 	# implementation impede.
 	variable -impeder    ""
+	# Link option to pass to file link (can be -hard or
+	# -symbolic), the dash will be automatically be added if
+	# missing.
+	variable -linking    hard
     }
 
     # Automatically export all procedures starting with lower case and
     # create an ensemble for an easier API.
     namespace export {[a-z]*}
     namespace ensemble create
+}
+
+
+# ::lockf::defaults -- Set default parameters
+#
+#       This procedure takes an even list of keys and values used to
+#       set the values of the options supported by the library.  The
+#       list of options is composed of all variables starting with a
+#       dash in the vars sub-namespace.  In the list, the dash
+#       preceding the key is optional.
+#
+# Arguments:
+#        args        List of key and values to set for module options.
+#
+# Results:
+#       None.
+#
+# Side Effects:
+#       None.
+proc ::lockf::defaults { args } {
+    foreach {k v} $args {
+        set k -[string trimleft $k -]
+        if { [info exists vars::$k] } {
+            set vars::$k $v
+        }
+    }
 }
 
 
@@ -146,7 +176,8 @@ proc ::lockf::lock { fname args } {
 
     while {!$done} {
 	# Try linking, ignore all errors.
-	if { [catch {file link -hard $LCK(lockfile) $LCK(locker)} err] == 0 } {
+	set type -[string trimleft ${vars::-linking} -]
+	if { [catch {file link $type $LCK(lockfile) $LCK(locker)} err] == 0 } {
             if { [Same $LCK(locker) $LCK(lockfile)] } {
 		Debug "Acquired lock at $LCK(lockfile)!"
 		set LCK(state) LOCKED
@@ -364,13 +395,23 @@ proc ::lockf::owner { fname } {
 
 
 proc ::lockf::Same { f1 f2 {ino_diff 1} } {
-    # Stat the file, if we fail for one of them, they can't be the
+    # Stat the files, if we fail for one of them, they can't be the
     # same...
     if { [catch {file lstat $f1 F1} err] } {
         return 0
     }
     if { [catch {file lstat $f2 F2} err] } {
         return 0
+    }
+    
+    # Resolve to the linked files if we are using symbolic links.
+    if { [string trimleft ${vars::-linking} -] eq "symbolic" } {
+	if { $F1(type) eq "link" } {
+	    file stat $f1 F1
+	}
+	if { $F2(type) eq "link" } {
+	    file stat $f2 F2
+	}
     }
 
     # Now compute ino difference
