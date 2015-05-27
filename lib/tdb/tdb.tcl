@@ -666,6 +666,11 @@ proc ::tdb::TempFile { dir {fpath_ {}} {retries 10}} {
             return $channel
         }
     }
+    # Failsafe: just pick a file that is hopefully unique!
+    set filename [TempPath $dir]
+    if { [catch {open $filename rw} channel] } {
+	return $channel
+    }
     error "failed to find an unused temporary file name"    
 }
 
