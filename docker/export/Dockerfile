@@ -12,7 +12,7 @@ RUN apk add --update-cache git && \
 # Export where databases will be placed by default
 VOLUME /data
 
-# Execute tsdb2influx on start, Use same directory conventions as the
+# Execute export on start, Use same directory conventions as the
 # main tsdb process
-ENTRYPOINT ["tclsh8.6", "/opt/tsdb/tsdb2influx.tcl", "-root", "/data", "-dbs", "data"]
+ENTRYPOINT ["tclsh8.6", "/opt/tsdb/export.tcl", "-root", "/data", "-dbs", "data"]
 CMD ["-v", "5"]
